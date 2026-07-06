@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { h } from 'vue'
 
 const routes = [
-  { path: '/', component: { template: '<div>Placeholder</div>' } }
+  { path: '/', component: { render: () => h('div', 'Placeholder') } }
 ]
 
 const router = createRouter({

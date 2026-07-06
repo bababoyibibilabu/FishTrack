@@ -10,15 +10,12 @@
   z-index: 1;
 }
 
-/* 适配移动端圆角和全面屏手势 */
+/* 适配移动端 */
 body {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  user-select: none;
+  margin: 0;
 }
 
-/* 输入框聚焦效果 */
+/* 输入框移动端点击高亮重置 */
 input, textarea {
-  outline: none;
   -webkit-tap-highlight-color: transparent;
 }
