@@ -29,7 +29,7 @@
       <div class="space-y-2">
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">上传照片 (包含位置的照片可自动提取GPS坐标)</label>
         <div class="flex items-center gap-4">
-          <label class="flex-1 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-center py-4 rounded-xl cursor-pointer text-sm text-slate-300 font-semibold transition-colors active:scale-[0.98] border-dashed">
+          <label class="flex-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center py-4 rounded-xl cursor-pointer text-sm text-slate-300 font-semibold transition-colors active:scale-[0.98] border-dashed">
             <span>📷 选择/拍摄照片</span>
             <input 
               type="file" 

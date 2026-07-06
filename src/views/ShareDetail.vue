@@ -35,31 +35,19 @@
       </div>
 
       <!-- 3. 克隆机制按钮 -->
-      <div class="pt-4">
-        <div v-if="currentUser">
-          <!-- 已经登录，展示克隆按钮 -->
-          <button 
-            type="button"
-            v-if="!isOwner"
-            @click="cloneSpot" 
-            :disabled="cloning"
-            class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl text-sm shadow-xl active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <span>📥 存入我的手帐 (克隆钓点)</span>
-          </button>
-          <div v-else class="text-center text-xs text-slate-500 bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-            这是您自己拥有的钓点，无需进行克隆。
-          </div>
-        </div>
-        <div v-else class="text-center space-y-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
-          <p class="text-sm text-slate-400">您需要先登录“鱼迹”手帐系统，才能将钓友分享的钓点转存到自己的私人手帐中。</p>
-          <button 
-            type="button"
-            @click="$router.push('/login')" 
-            class="inline-block py-2.5 px-6 bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold rounded-xl active:scale-95 transition-transform"
-          >
-            立即登录手帐系统
-          </button>
+      <div class="pt-4" v-if="currentUser">
+        <!-- 已经登录，展示克隆按钮 -->
+        <button 
+          type="button"
+          v-if="!isOwner"
+          @click="cloneSpot" 
+          :disabled="cloning"
+          class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl text-sm shadow-xl active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <span>📥 存入我的手帐 (克隆钓点)</span>
+        </button>
+        <div v-else class="text-center text-xs text-slate-500 bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+          这是您自己拥有的钓点，无需进行克隆。
         </div>
       </div>
     </main>
@@ -104,28 +92,33 @@ onMounted(async () => {
     return
   }
 
-  // 1. 获取当前登录状态
-  const { data: { user } } = await supabase.auth.getUser()
-  currentUser.value = user
+  try {
+    // 1. 获取当前登录状态
+    const { data: { user } } = await supabase.auth.getUser()
+    currentUser.value = user
 
-  // 2. 根据 ID 查询钓点
-  if (!user) {
-    errorMsg.value = '请先登录系统，以访问钓友分享的数据。'
-    return
-  }
+    // 2. 根据 ID 查询钓点
+    if (!user) {
+      errorMsg.value = '请先登录系统，以访问钓友分享的数据。'
+      return
+    }
 
-  const { data, error } = await supabase
-    .from('fishing_spots')
-    .select('*')
-    .eq('id', spotId)
-    .eq('is_shared', true)
-    .single()
+    const { data, error } = await supabase
+      .from('fishing_spots')
+      .select('*')
+      .eq('id', spotId)
+      .eq('is_shared', true)
+      .single()
 
-  if (error || !data) {
-    errorMsg.value = '该钓点不存在，或钓友已关闭其分享权限。'
-  } else {
-    spot.value = data
-    location.value = { lat: data.lat, lng: data.lng }
+    if (error || !data) {
+      errorMsg.value = '该钓点不存在，或钓友已关闭其分享权限。'
+    } else {
+      spot.value = data
+      location.value = { lat: data.lat, lng: data.lng }
+    }
+  } catch (err) {
+    console.error('Error fetching share spot:', err)
+    errorMsg.value = '网络异常，获取分享数据失败'
   }
 })
 
@@ -140,12 +133,41 @@ const cloneSpot = async () => {
   cloning.value = true
   
   try {
+    let clonedImageUrl = spot.value.image_url
+
+    // 解决图片依赖冲突：克隆时复制 Storage 内的对应照片文件到当前克隆用户文件夹下，确保数据独立
+    if (spot.value.image_url) {
+      try {
+        const parts = spot.value.image_url.split('/fishing-photos/')
+        if (parts.length > 1) {
+          const fromPath = decodeURIComponent(parts[1])
+          const filename = fromPath.split('/').pop()
+          const toPath = `${currentUser.value.id}/cloned_${Date.now()}_${filename}`
+
+          const { error: copyError } = await supabase.storage
+            .from('fishing-photos')
+            .copy(fromPath, toPath)
+
+          if (!copyError) {
+            const { data: urlData } = supabase.storage
+              .from('fishing-photos')
+              .getPublicUrl(toPath)
+            clonedImageUrl = urlData.publicUrl
+          } else {
+            console.warn('Storage image copy failed, using original url reference as fallback:', copyError)
+          }
+        }
+      } catch (imageErr) {
+        console.error('Error copying shared photo in storage:', imageErr)
+      }
+    }
+
     const payload = {
       name: `${spot.value.name} (来自钓友)`,
       description: spot.value.description,
       lat: spot.value.lat,
       lng: spot.value.lng,
-      image_url: spot.value.image_url,
+      image_url: clonedImageUrl,
       is_shared: false, // 存入我自己的手帐后默认私有
       user_id: currentUser.value.id
     }
