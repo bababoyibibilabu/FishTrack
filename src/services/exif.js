@@ -7,8 +7,8 @@ import EXIF from 'exif-js'
  */
 export function getLatLngFromImage(file) {
   return new Promise((resolve) => {
-    try {
-      EXIF.getData(file, function () {
+    EXIF.getData(file, function () {
+      try {
         const latData = EXIF.getTag(this, 'GPSLatitude')
         const lonData = EXIF.getTag(this, 'GPSLongitude')
         const latRef = EXIF.getTag(this, 'GPSLatitudeRef') || 'N'
@@ -26,10 +26,10 @@ export function getLatLngFromImage(file) {
         } else {
           resolve(null)
         }
-      })
-    } catch (error) {
-      console.error('EXIF parsing failed', error)
-      resolve(null)
-    }
+      } catch (error) {
+        console.error('EXIF parsing failed', error)
+        resolve(null)
+      }
+    })
   })
 }
