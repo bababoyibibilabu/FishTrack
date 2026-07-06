@@ -128,18 +128,24 @@ onMounted(async () => {
 })
 
 const fetchSpot = async () => {
-  const { data, error } = await supabase
-    .from('fishing_spots')
-    .select('*')
-    .eq('id', props.id)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('fishing_spots')
+      .select('*')
+      .eq('id', props.id)
+      .single()
 
-  if (error) {
-    alert('钓点数据拉取失败：' + error.message)
+    if (error) {
+      alert('钓点数据拉取失败：' + error.message)
+      router.push('/')
+    } else {
+      spot.value = data
+      location.value = { lat: data.lat, lng: data.lng }
+    }
+  } catch (err) {
+    console.error('Error fetching spot:', err)
+    alert('网络错误，无法加载钓点数据')
     router.push('/')
-  } else {
-    spot.value = data
-    location.value = { lat: data.lat, lng: data.lng }
   }
 }
 
@@ -151,22 +157,38 @@ const shareUrl = computed(() => {
 // 开启/关闭分享状态
 const toggleShareStatus = async () => {
   const newStatus = !spot.value.is_shared
-  const { error } = await supabase
-    .from('fishing_spots')
-    .update({ is_shared: newStatus })
-    .eq('id', props.id)
+  try {
+    const { error } = await supabase
+      .from('fishing_spots')
+      .update({ is_shared: newStatus })
+      .eq('id', props.id)
 
-  if (error) {
-    alert('修改分享状态失败：' + error.message)
-  } else {
-    spot.value.is_shared = newStatus
+    if (error) {
+      alert('修改分享状态失败：' + error.message)
+    } else {
+      spot.value.is_shared = newStatus
+    }
+  } catch (err) {
+    console.error('Error toggling share status:', err)
+    alert('网络错误，修改分享状态失败')
   }
 }
 
 // 复制分享链接
 const copyShareLink = async () => {
   try {
-    await navigator.clipboard.writeText(shareUrl.value)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(shareUrl.value)
+    } else {
+      // 移动端/微信 Webview 兼容性剪贴板复制降级
+      const textarea = document.createElement('textarea')
+      textarea.value = shareUrl.value
+      textarea.style.position = 'fixed'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
     alert('分享只读链接已复制，去微信发给钓友吧！')
   } catch (err) {
     alert('无法复制，请手动选中输入框链接进行复制')
@@ -176,8 +198,8 @@ const copyShareLink = async () => {
 // 高德导航 (GCJ-02)
 const navGaode = () => {
   const { lat, lng, name } = spot.value
-  // dev=1 代表传入的是火星坐标 (GCJ-02)
-  const scheme = `amapuri://navigation?sourceApplication=FishApp&poiname=${encodeURIComponent(name)}&lat=${lat}&lon=${lng}&dev=1&style=2`
+  // dev=0 代表传入的是火星坐标 (GCJ-02)，高德地图将正确显示不发生坐标偏移。
+  const scheme = `amapuri://navigation?sourceApplication=FishApp&poiname=${encodeURIComponent(name)}&lat=${lat}&lon=${lng}&dev=0&style=2`
   window.location.href = scheme
 }
 
@@ -186,37 +208,42 @@ const navBaidu = () => {
   const { lat, lng, name } = spot.value
   // 先将火星坐标转为百度坐标
   const bd = convertGcj02ToBd09(lng, lat)
-  const scheme = `baidumap://map/direction?destination=latlng:${bd.lat},${bd.lng}|name:${encodeURIComponent(name)}&mode=driving`
+  const scheme = `baidumap://map/direction?destination=latlng:${bd.lat},${bd.lng}|name:${encodeURIComponent(name)}&mode=driving&coord_type=bd09ll&src=webapp.FishTrack.FishApp`
   window.location.href = scheme
 }
 
 // 删除钓点
 const deleteSpot = async () => {
   if (confirm('重要操作：确定永久删除该钓点数据及照片吗？')) {
-    // 1. 若有图片，先从 Storage 删除
-    if (spot.value.image_url) {
-      try {
-        const parts = spot.value.image_url.split('/fishing-photos/')
-        if (parts.length > 1) {
-          const filePath = decodeURIComponent(parts[1])
-          await supabase.storage.from('fishing-photos').remove([filePath])
+    try {
+      // 1. 若有图片，先从 Storage 删除
+      if (spot.value.image_url) {
+        try {
+          const parts = spot.value.image_url.split('/fishing-photos/')
+          if (parts.length > 1) {
+            const filePath = decodeURIComponent(parts[1])
+            await supabase.storage.from('fishing-photos').remove([filePath])
+          }
+        } catch (err) {
+          console.error('Failed to remove image file from storage', err)
         }
-      } catch (err) {
-        console.error('Failed to remove image file', err)
       }
-    }
 
-    // 2. 从数据库删除
-    const { error } = await supabase
-      .from('fishing_spots')
-      .delete()
-      .eq('id', props.id)
+      // 2. 从数据库删除
+      const { error } = await supabase
+        .from('fishing_spots')
+        .delete()
+        .eq('id', props.id)
 
-    if (error) {
-      alert('删除失败：' + error.message)
-    } else {
-      alert('删除成功！')
-      router.push('/')
+      if (error) {
+        alert('删除失败：' + error.message)
+      } else {
+        alert('删除成功！')
+        router.push('/')
+      }
+    } catch (err) {
+      console.error('Error deleting spot:', err)
+      alert('网络错误，删除失败')
     }
   }
 }
