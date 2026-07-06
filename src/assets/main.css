@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'leaflet/dist/leaflet.css';
+
+/* 解决 leaflet 容器在 iOS 滑动惯性下的闪屏问题 */
+.leaflet-container {
+  font-family: inherit;
+  z-index: 1;
+}
+
+/* 适配移动端圆角和全面屏手势 */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  user-select: none;
+}
+
+/* 输入框聚焦效果 */
+input, textarea {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
