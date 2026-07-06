@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1 flex flex-col bg-slate-950 pb-12">
     <!-- 头部栏 -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] flex justify-between items-center sticky top-0 z-50">
       <h1 class="text-lg font-bold text-slate-100">
         {{ isEdit ? '✏️ 编辑钓点' : '➕ 新建钓点' }}
       </h1>
@@ -15,7 +15,7 @@
     </header>
 
     <!-- 表单主体 -->
-    <main class="flex-1 p-6 space-y-6 max-w-xl mx-auto w-full">
+    <form @submit.prevent="handleSubmit" class="flex-1 p-6 space-y-6 max-w-xl mx-auto w-full">
       <!-- 1. 地图微调区域 (高度固定 300px 适配移动端) -->
       <div class="space-y-2">
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">地图选址 (支持拖拽标记精准微调)</label>
@@ -93,14 +93,13 @@
 
       <!-- 提交按钮 -->
       <button 
-        type="button"
-        @click="handleSubmit" 
+        type="submit"
         :disabled="submitting" 
         class="w-full py-4 px-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold rounded-xl text-sm shadow-xl active:scale-[0.98] transition-transform disabled:opacity-50"
       >
         {{ submitting ? '正在保存数据...' : '保存至私人手帐' }}
       </button>
-    </main>
+    </form>
   </div>
 </template>
 
@@ -160,24 +159,37 @@ const triggerGeolocation = () => {
 
 // 获取详情进行编辑
 const fetchSpotDetail = async () => {
-  const { data, error } = await supabase
-    .from('fishing_spots')
-    .select('*')
-    .eq('id', props.id)
-    .single()
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error } = await supabase
+      .from('fishing_spots')
+      .select('*')
+      .eq('id', props.id)
+      .single()
 
-  if (error) {
-    alert('钓点数据拉取失败：' + error.message)
-    router.push('/')
-  } else {
-    form.value.name = data.name
-    form.value.description = data.description
-    form.value.coord = { lat: data.lat, lng: data.lng }
-    form.value.is_shared = data.is_shared
-    if (data.image_url) {
-      photoPreview.value = data.image_url
-      existingImageUrl = data.image_url
+    if (error) {
+      alert('钓点数据拉取失败：' + error.message)
+      router.push('/')
+    } else {
+      // 检查编辑所有权，若当前用户非所有者，拦截并重定向到主页
+      if (data.user_id !== user?.id) {
+        alert('越权操作：您没有权限编辑此钓点数据！')
+        router.push('/')
+        return
+      }
+      form.value.name = data.name
+      form.value.description = data.description
+      form.value.coord = { lat: data.lat, lng: data.lng }
+      form.value.is_shared = data.is_shared
+      if (data.image_url) {
+        photoPreview.value = data.image_url
+        existingImageUrl = data.image_url
+      }
     }
+  } catch (err) {
+    console.error('Error fetching spot detail:', err)
+    alert('网络错误，无法加载数据')
+    router.push('/')
   }
 }
 

@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1 flex flex-col bg-slate-950 pb-12" v-if="spot">
     <!-- 头部栏 -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] flex justify-between items-center sticky top-0 z-50">
       <h1 class="text-lg font-bold text-slate-100 truncate max-w-[60%]">
         👥 钓友分享：{{ spot.name }}
       </h1>

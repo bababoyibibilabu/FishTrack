@@ -1,7 +1,7 @@
 <template>
   <div class="flex-1 flex flex-col bg-slate-950 pb-12" v-if="spot">
     <!-- 头部栏 -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] flex justify-between items-center sticky top-0 z-50">
       <h1 class="text-lg font-bold text-slate-100 truncate max-w-[60%]">
         🚩 {{ spot.name }}
       </h1>
@@ -129,6 +129,7 @@ onMounted(async () => {
 
 const fetchSpot = async () => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
     const { data, error } = await supabase
       .from('fishing_spots')
       .select('*')
@@ -139,6 +140,11 @@ const fetchSpot = async () => {
       alert('钓点数据拉取失败：' + error.message)
       router.push('/')
     } else {
+      // 检查所有权，若当前用户非所有者，直接重定向到只读分享克隆页
+      if (data.user_id !== user?.id) {
+        router.replace({ name: 'ShareDetail', query: { id: props.id } })
+        return
+      }
       spot.value = data
       location.value = { lat: data.lat, lng: data.lng }
     }
