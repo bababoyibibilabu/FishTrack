@@ -45,8 +45,8 @@ const DEFAULT_LAT = 39.9088
 const DEFAULT_LNG = 116.3975
 
 onMounted(() => {
-  const initialLat = props.modelValue?.lat || DEFAULT_LAT
-  const initialLng = props.modelValue?.lng || DEFAULT_LNG
+  const initialLat = (props.modelValue && typeof props.modelValue.lat === 'number') ? props.modelValue.lat : DEFAULT_LAT
+  const initialLng = (props.modelValue && typeof props.modelValue.lng === 'number') ? props.modelValue.lng : DEFAULT_LNG
 
   // 1. 初始化地图容器
   map = L.map(mapContainer.value, {
@@ -97,7 +97,7 @@ onMounted(() => {
 
 // 监听外界数据变化主动修改地图中心和 marker 点
 watch(() => props.modelValue, (newVal) => {
-  if (map && marker && newVal && newVal.lat && newVal.lng) {
+  if (map && marker && newVal && typeof newVal.lat === 'number' && typeof newVal.lng === 'number') {
     const currentLatLng = marker.getLatLng()
     if (currentLatLng.lat !== newVal.lat || currentLatLng.lng !== newVal.lng) {
       marker.setLatLng([newVal.lat, newVal.lng])
