@@ -85,7 +85,7 @@ npm run build
 
 本项目的行级安全（RLS）和文件存储防冲突规则十分严密。为了确保项目的正常运行，请在 Supabase SQL 窗口和存储设置中导入相关的 SQL。
 
-详细的数据库建表与存储 Bucket 配置脚本已整理在 **[supabase_setup_instructions.md](file:///C:/Users/dell/.gemini/antigravity-cli/brain/6d7096ad-7cd7-468f-9892-8b3ec28776de/supabase_setup_instructions.md)** 引导文档中（该文件位于会话的 Artifact 归档中，请打开该文件拷贝完整的 SQL 策略到 Supabase 运行）。
+详细的数据库建表与存储 Bucket 配置脚本已整理在 **[supabase_setup_instructions.md](file:///D:/vibe%20coding/FishTrack/supabase_setup_instructions.md)** 引导文档中，请打开该文件拷贝完整的 SQL 策略到 Supabase 运行。
 
 ---
 

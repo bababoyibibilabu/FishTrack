@@ -4,16 +4,18 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "postinstall": "node -e \"const fs = require('fs'); const file = 'node_modules/exif-js/exif.js'; if (fs.existsSync(file)) { const content = fs.readFileSync(file, 'utf8'); fs.writeFileSync(file, content.replace(/for \\(n = start;/g, 'for (var n = start;')); }\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
     "coordtransform": "^2.1.2",
     "exif-js": "^2.3.0",
     "leaflet": "^1.9.4",
+    "puppeteer": "^25.3.0",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0"
   },

@@ -23,11 +23,6 @@ const router = createRouter({
 
 // 路由拦截器
 router.beforeEach(async (to, from, next) => {
-  // 快速放行公共路由，避免阻塞
-  if (!to.meta.requiresAuth && to.name !== 'Login') {
-    return next()
-  }
-
   const { data: { session } } = await supabase.auth.getSession()
   const isAuthenticated = !!session
 

@@ -97,7 +97,7 @@ onMounted(() => {
 
 // 监听外界数据变化主动修改地图中心和 marker 点
 watch(() => props.modelValue, (newVal) => {
-  if (map && marker && newVal && typeof newVal.lat === 'number' && typeof newVal.lng === 'number') {
+  if (map && marker && newVal && typeof newVal.lat === 'number' && !isNaN(newVal.lat) && typeof newVal.lng === 'number' && !isNaN(newVal.lng)) {
     const currentLatLng = marker.getLatLng()
     if (currentLatLng.lat !== newVal.lat || currentLatLng.lng !== newVal.lng) {
       marker.setLatLng([newVal.lat, newVal.lng])

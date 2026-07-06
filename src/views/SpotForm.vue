@@ -3,7 +3,7 @@
     <!-- 头部栏 -->
     <header class="bg-slate-900 border-b border-slate-800 px-6 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] flex justify-between items-center sticky top-0 z-50">
       <h1 class="text-lg font-bold text-slate-100">
-        {{ isEdit ? '✏️ 编辑钓点' : '➕ 新建钓点' }}
+        {{ isEdit ? '✏️ 编辑钓点' : '➕ 新建钓点' }} <span class="text-[10px] text-slate-500 font-normal ml-1">(已应用切片优化 v1.6)</span>
       </h1>
       <button 
         type="button"
@@ -207,15 +207,24 @@ const handlePhotoSelect = async (e) => {
   photoPreview.value = URL.createObjectURL(file)
   exifStatus.value = '正在解析照片 GPS 数据...'
 
-  // 解析 GPS
-  const rawGps = await getLatLngFromImage(file)
-  if (rawGps) {
-    // 解析出的 WGS84 转换为 GCJ-02 覆盖当前地图坐标
-    const gcj = convertWgs84ToGcj02(rawGps.lng, rawGps.lat)
-    form.value.coord = gcj
-    exifStatus.value = '✨ 已成功从照片中读取 GPS 位置，地图已同步更新！'
-  } else {
-    exifStatus.value = '⚠️ 该照片中未包含 GPS 定位元数据'
+  try {
+    // 解析 GPS
+    const rawGps = await getLatLngFromImage(file, (msg) => {
+      exifStatus.value = msg
+    })
+    if (rawGps && !rawGps.error) {
+      // 解析出的 WGS84 转换为 GCJ-02 覆盖当前地图坐标
+      const gcj = convertWgs84ToGcj02(rawGps.lng, rawGps.lat)
+      form.value.coord = gcj
+      exifStatus.value = '✨ 已成功从照片中读取 GPS 位置，地图已同步更新！'
+    } else if (rawGps && rawGps.error) {
+      exifStatus.value = `❌ 解析出错: ${rawGps.error}`
+    } else {
+      exifStatus.value = '⚠️ 该照片中未包含 GPS 定位元数据'
+    }
+  } catch (error) {
+    console.error('Failed to get GPS location from image:', error)
+    exifStatus.value = '⚠️ 解析照片位置失败，已跳过 GPS 识别'
   }
 }
 
@@ -242,7 +251,7 @@ const uploadPhoto = async (userId) => {
     .from('fishing-photos')
     .upload(fileName, photoFile.value, {
       cacheControl: '3600',
-      upsert: true
+      upsert: false
     })
 
   if (error) {
