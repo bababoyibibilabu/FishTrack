@@ -10,7 +10,7 @@
         </p>
       </div>
 
-      <div class="mt-8 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
         <div class="space-y-4">
           <!-- 步骤一：输入邮箱获取验证码 -->
           <div v-if="!otpSent">
@@ -20,6 +20,7 @@
               name="email"
               type="email"
               required
+              autocomplete="email"
               v-model="email"
               class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:border-sky-500 transition-colors text-base"
               placeholder="请输入您的邮箱"
@@ -34,6 +35,9 @@
               name="otp"
               type="text"
               required
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="one-time-code"
               v-model="token"
               class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:border-sky-500 transition-colors text-base tracking-widest text-center"
               placeholder="请输入6位验证码"
@@ -44,7 +48,7 @@
         <div>
           <!-- 核心逻辑控制 -->
           <button
-            @click="handleSubmit"
+            type="submit"
             :disabled="loading"
             class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 focus:outline-none transition-all disabled:opacity-50"
           >
@@ -54,6 +58,7 @@
           </button>
 
           <button
+            type="button"
             v-if="otpSent"
             @click="otpSent = false"
             class="w-full text-center text-xs text-sky-400 mt-4 hover:underline"
@@ -65,7 +70,7 @@
         <p v-if="message" :class="`text-center text-sm ${isError ? 'text-red-400' : 'text-emerald-400'}`">
           {{ message }}
         </p>
-      </div>
+      </form>
     </div>
   </div>
 </template>
