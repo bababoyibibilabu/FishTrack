@@ -11,7 +11,7 @@
       <button 
         type="button"
         @click="handleLogout" 
-        class="text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-900/50 px-3 py-1.5 rounded-lg bg-slate-955 transition-colors"
+        class="text-xs text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-900/50 px-3 py-1.5 rounded-lg bg-slate-950 transition-colors"
       >
         退出登录
       </button>
@@ -58,7 +58,7 @@
               class="w-full h-full object-cover" 
               alt="钓点实况"
             />
-            <div v-else class="w-full h-full flex flex-col justify-center items-center text-slate-600 bg-slate-850">
+            <div v-else class="w-full h-full flex flex-col justify-center items-center text-slate-600 bg-slate-800">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -113,32 +113,43 @@ const searchQuery = ref('')
 const userEmail = ref('')
 
 onMounted(async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    userEmail.value = user.email
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      userEmail.value = user.email
+    }
+  } catch (err) {
+    console.error('Error fetching user info:', err)
   }
   await fetchSpots()
 })
 
 const fetchSpots = async () => {
   loading.value = true
-  // RLS 机制自动完成本账户下的数据过滤隔离，拉取当前账号数据
-  const { data, error } = await supabase
-    .from('fishing_spots')
-    .select('*')
-    .order('created_at', { ascending: false })
+  try {
+    // RLS 机制自动完成本账户下的数据过滤隔离，拉取当前账号数据
+    const { data, error } = await supabase
+      .from('fishing_spots')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    alert('数据拉取失败：' + error.message)
-  } else {
-    spots.value = data || []
+    if (error) {
+      alert('数据拉取失败：' + error.message)
+    } else {
+      spots.value = data || []
+    }
+  } catch (err) {
+    console.error('Error fetching spots:', err)
+    alert('网络请求失败，请稍后重试！')
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 const filteredSpots = computed(() => {
-  if (!searchQuery.value) return spots.value
-  return spots.value.filter(s => s.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return spots.value
+  return spots.value.filter(s => (s.name || '').toLowerCase().includes(query))
 })
 
 const handleLogout = async () => {
