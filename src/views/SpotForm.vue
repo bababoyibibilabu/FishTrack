@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../services/supabase'
 import { getLatLngFromImage } from '../services/exif'
@@ -186,6 +186,11 @@ const handlePhotoSelect = async (e) => {
   const file = e.target.files[0]
   if (!file) return
 
+  // 释放之前的临时 URL 以免内存泄漏
+  if (photoPreview.value && photoPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(photoPreview.value)
+  }
+
   photoFile.value = file
   photoPreview.value = URL.createObjectURL(file)
   exifStatus.value = '正在解析照片 GPS 数据...'
@@ -204,6 +209,9 @@ const handlePhotoSelect = async (e) => {
 
 // 移除照片
 const clearPhoto = () => {
+  if (photoPreview.value && photoPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(photoPreview.value)
+  }
   photoFile.value = null
   photoPreview.value = ''
   exifStatus.value = ''
@@ -211,10 +219,11 @@ const clearPhoto = () => {
 
 // 上传至 Supabase Storage
 const uploadPhoto = async (userId) => {
+  if (!photoPreview.value) return '' // 照片被显式清空
   if (!photoFile.value) return existingImageUrl
 
-  // 拼接：userId/时间戳_文件名
-  const fileExt = photoFile.value.name.split('.').pop()
+  // 拼接：userId/时间戳_文件名 (增加 fallback 扩展名)
+  const fileExt = photoFile.value.name.split('.').pop() || 'jpg'
   const fileName = `${userId}/${Date.now()}.${fileExt}`
   
   const { data, error } = await supabase.storage
@@ -285,4 +294,9 @@ const handleSubmit = async () => {
     submitting.value = false
   }
 }
+onBeforeUnmount(() => {
+  if (photoPreview.value && photoPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(photoPreview.value)
+  }
+})
 </script>
