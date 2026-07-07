@@ -23,8 +23,18 @@
 
       <!-- 2. 实况照片与描述 -->
       <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 space-y-4">
-        <div v-if="spot.image_url" class="h-56 w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-          <img :src="spot.image_url" class="w-full h-full object-cover" alt="钓点实况图" />
+        <div v-if="spot.image_url" class="h-56 w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950 cursor-zoom-in relative group">
+          <img 
+            :src="spot.image_url" 
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+            alt="钓点实况图" 
+            @click="isImageExpanded = true"
+          />
+          <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+            <span class="bg-slate-900/80 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 text-sky-400">
+              🔍 点击放大查看
+            </span>
+          </div>
         </div>
         <div>
           <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">钓点详情描述</h3>
@@ -51,6 +61,31 @@
         </div>
       </div>
     </main>
+    <!-- 全屏图片查看模态框 -->
+    <transition name="modal-fade">
+      <div 
+        v-if="isImageExpanded && spot.image_url" 
+        class="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+        @click="isImageExpanded = false"
+      >
+        <div class="relative max-w-full max-h-full flex items-center justify-center">
+          <img 
+            :src="spot.image_url" 
+            class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            alt="钓点实况大图"
+            @click.stop
+          />
+          <button 
+            @click="isImageExpanded = false"
+            class="absolute -top-12 right-0 bg-slate-900/80 text-slate-300 rounded-full p-2 hover:text-white transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </transition>
   </div>
   <div v-else-if="errorMsg" class="flex-1 flex flex-col justify-center items-center p-6 text-center space-y-4 bg-slate-950 min-h-screen">
     <div class="text-4xl">⚠️</div>
@@ -82,6 +117,7 @@ const router = useRouter()
 const spot = ref(null)
 const location = ref({ lat: 39.9088, lng: 116.3975 })
 const currentUser = ref(null)
+const isImageExpanded = ref(false)
 const cloning = ref(false)
 const errorMsg = ref('')
 
@@ -191,3 +227,28 @@ const goHome = () => {
   router.push('/')
 }
 </script>
+
+<style scoped>
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+.modal-fade-enter-active img {
+  animation: zoom-in 0.3s ease;
+}
+.modal-fade-leave-active img {
+  animation: zoom-in 0.3s ease reverse;
+}
+@keyframes zoom-in {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+</style>

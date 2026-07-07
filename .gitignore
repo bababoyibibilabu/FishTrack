@@ -35,3 +35,7 @@ Thumbs.db
 
 # Test coverage outputs
 /coverage
+
+# Documentation
+docs/
+doc/
